@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <title>Claude Code Test Page</title>
   <style>
     :root {
@@ -121,7 +123,7 @@
     <div class="toggle-wrap">
       <span>☀️</span>
       <label class="toggle">
-        <input type="checkbox" id="themeToggle" onchange="toggleTheme(this)">
+        <input type="checkbox" id="themeToggle">
         <span class="slider"></span>
       </label>
       <span>🌙</span>
@@ -132,16 +134,16 @@
   <div class="card">
     <h2>Echo Input</h2>
     <input type="text" id="userInput" placeholder="Type something..." />
-    <button onclick="echoInput()">Submit</button>
+    <button id="echoBtn">Submit</button>
     <div id="output">Output will appear here.</div>
   </div>
 
   <div class="card">
     <h2>Counter</h2>
-    <button onclick="change(-1)">−</button>
+    <button id="decrementBtn">−</button>
     <span id="count" style="margin: 0 16px; font-size: 20px; font-weight: bold;">0</span>
-    <button onclick="change(1)">+</button>
-    <button onclick="reset()" style="margin-left: 16px; background: #888;">Reset</button>
+    <button id="incrementBtn">+</button>
+    <button id="resetBtn" style="margin-left: 16px; background: #888;">Reset</button>
   </div>
 
   <div class="card">
@@ -154,30 +156,34 @@
   </footer>
 
   <script>
-    function toggleTheme(checkbox) {
-      document.documentElement.setAttribute("data-theme", checkbox.checked ? "dark" : "light");
-    }
+    document.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("themeToggle").addEventListener("change", function () {
+        document.documentElement.setAttribute("data-theme", this.checked ? "dark" : "light");
+      });
 
-    function echoInput() {
-      const val = document.getElementById("userInput").value.trim();
-      document.getElementById("output").textContent = val ? "You said: " + val : "(empty input)";
-    }
+      document.getElementById("echoBtn").addEventListener("click", function () {
+        const val = document.getElementById("userInput").value.trim();
+        document.getElementById("output").textContent = val ? "You said: " + val : "(empty input)";
+      });
 
-    let count = 0;
-    function change(n) {
-      count += n;
-      document.getElementById("count").textContent = count;
-    }
-    function reset() {
-      count = 0;
-      document.getElementById("count").textContent = count;
-    }
+      let count = 0;
+      document.getElementById("decrementBtn").addEventListener("click", function () {
+        document.getElementById("count").textContent = --count;
+      });
+      document.getElementById("incrementBtn").addEventListener("click", function () {
+        document.getElementById("count").textContent = ++count;
+      });
+      document.getElementById("resetBtn").addEventListener("click", function () {
+        count = 0;
+        document.getElementById("count").textContent = count;
+      });
 
-    function updateClock() {
-      document.getElementById("clock").textContent = new Date().toLocaleTimeString();
-    }
-    updateClock();
-    setInterval(updateClock, 1000);
+      function updateClock() {
+        document.getElementById("clock").textContent = new Date().toLocaleTimeString();
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+    });
   </script>
 </body>
 </html>
