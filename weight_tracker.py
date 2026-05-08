@@ -1,21 +1,42 @@
 import json
 import os
 import sys
+import tempfile
 from datetime import date
 
 DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weight_data.json")
 
+EMPTY_DATA = {"start_date": None, "goal_weight": None, "unit": "lbs", "entries": {}}
+
 
 def load_data():
-    if os.path.exists(DATA_FILE):
+    if not os.path.exists(DATA_FILE):
+        return EMPTY_DATA.copy()
+    try:
         with open(DATA_FILE) as f:
-            return json.load(f)
-    return {"start_date": None, "goal_weight": None, "unit": "lbs", "entries": {}}
+            data = json.load(f)
+        if not isinstance(data.get("entries"), dict):
+            raise ValueError("entries must be a dict")
+        if data.get("unit") not in ("lbs", "kg", None):
+            raise ValueError("invalid unit")
+        if data.get("goal_weight") is not None:
+            data["goal_weight"] = float(data["goal_weight"])
+        if data.get("start_date") is not None:
+            date.fromisoformat(data["start_date"])
+        for key in list(data["entries"]):
+            int(key)
+        return data
+    except (json.JSONDecodeError, ValueError, TypeError, KeyError):
+        print("Warning: data file is corrupt or invalid. Starting fresh.")
+        return EMPTY_DATA.copy()
 
 
 def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+    dir_ = os.path.dirname(DATA_FILE)
+    with tempfile.NamedTemporaryFile("w", dir=dir_, delete=False, suffix=".tmp") as tmp:
+        json.dump(data, tmp, indent=2)
+        tmp_path = tmp.name
+    os.replace(tmp_path, DATA_FILE)
 
 
 def week_number(start_date_str, target_date=None):
@@ -159,6 +180,19 @@ def show_stats(data):
         else:
             direction = "above" if diff > 0 else "below"
             print(f"Goal ({data['goal_weight']} {unit}):  {abs(diff):.1f} {unit} {direction}")
+
+        start_weight = weights[0]
+        goal = data["goal_weight"]
+        current = weights[-1]
+        total_needed = start_weight - goal
+        if total_needed != 0:
+            progress = (start_weight - current) / total_needed
+            progress = max(0.0, min(1.0, progress))
+            bar_width = 30
+            filled = int(bar_width * progress)
+            bar = "█" * filled + "░" * (bar_width - filled)
+            print(f"\nProgress:  [{bar}] {progress * 100:.1f}%")
+            print(f"           {start_weight} {unit} → {goal} {unit}  (current: {current} {unit})")
 
     week = current_week(data)
     if week and week >= 1:
